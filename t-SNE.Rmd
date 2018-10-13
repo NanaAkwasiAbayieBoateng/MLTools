@@ -1,0 +1,57 @@
+---
+title: "Dimensionality Reduction"
+output: html_notebook
+author: Nana Boateng
+df_print: paged
+Time: '`r Sys.time()`'
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+---
+
+#### Multi-Dimensional Reduction and Visualisation with t-SNE
+
+
+t-SNE is a very powerful technique that can be used for visualising (looking for patterns) in multi-dimensional data. Great things have been said about this technique. In this blog post I did a few experiments with t-SNE in R to learn about this technique and its uses.
+
+Its power to visualise complex multi-dimensional data is apparent, as well as its ability to cluster data in an unsupervised way.
+
+What’s more, it is also quite clear that t-SNE can aid machine learning algorithms when it comes to prediction and classification. But the inclusion of t-SNE in machine learning algorithms and ensembles has to be ‘crafted’ carefully, since t-SNE was not originally intended for this purpose.
+
+All in all, t-SNE is a powerful technique that merits due attention.
+t-SNE
+
+Let’s start with a brief description. t-SNE stands for t-Distributed Stochastic Neighbor Embedding and its main aim is that of dimensionality reduction, i.e., given some complex dataset with many many dimensions, t-SNE projects this data into a 2D (or 3D) representation while preserving the ‘structure’ (patterns) in the original dataset. Visualising high-dimensional data in this way allows us to look for patterns in the dataset.
+
+t-SNE has become so popular because:
+
+    it was demonstrated to be useful in many situations,
+    it’s incredibly flexible, and
+    can often find structure where other dimensionality-reduction algorithms cannot.
+
+A good introduction on t-SNE can be found here. The original paper on t-SNE and some visualisations can be found at this site. In particular, I like this site which shows how t-SNE is used for unsupervised image clustering.
+
+While t-SNE itself is computationally heavy, a faster version exists that uses what is known as the Barnes-Hut approximation. This faster version allows t-SNE to be applied on large real-world datasets.
+t-SNE for Exploratory Data Analysis
+
+Because t-SNE is able to provide a 2D or 3D visual representation of high-dimensional data that preserves the original structure, we can use it during initial data exploration. We can use it to check for the presence of clusters in the data and as a visual check to see if there is some ‘order’ or some ‘pattern’ in the dataset. It can aid our intuition about what we think we know about the domain we are working in.
+
+Apart from the initial exploratory stage, visualising information via t-SNE (or any other algorithm) is vital throughout the entire analysis process – from those first investigations of the raw data, during data preparation, as well as when interpreting the outputs of machine learning algorithms and presenting insights to others. We will see further on that we can use t-SNE even during the predcition/classification stage itself.
+Experiments on the Optdigits dataset
+
+In this post, I will apply t-SNE to a well-known dataset, called optdigits, for visualisation purposes.
+
+The optdigits dataset has 64 dimensions. Can t-SNE reduce these 64 dimensions to just 2 dimension while preserving structure in the process? And will this structure (if present) allow handwritten digits to be correctly clustered together? Let’s find out.
+tsne package
+
+We will use the tsne package that provides an exact implementation of t-SNE (not the Barnes-Hut approximation). And we will use this method to reduce dimensionality of the optdigits data to 2 dimensions. Thus, the final output of t-SNE will essentially be an array of 2D coordinates, one per row (image). And we can then plot these coordinates to get the final 2D map (visualisation). The algorithm runs in iterations (called epochs), until the system converges. Every
+\(K\) number of iterations and upon convergence, t-SNE can call a user-supplied callback function, and passes the list of 2D coordinates to it. In our callback function, we plot the 2D points (one per image) and the corresponding class labels, and colour-code everything by the class labels.
+
+```{r}
+
+#install.packages("tsne")
+
+library(Rtsne)
+
+library(tsne)
+```
+
+

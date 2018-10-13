@@ -1,0 +1,198 @@
+---
+title: "Tidy Evaluation"
+output:
+  html_document:
+    toc: true
+    theme: united
+author: Nana Boateng
+df_print: paged
+Time: '`r Sys.time()`'
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+toc_depth: 3  # upto three depths of headings (specified by #, ## and ###)
+number_sections: true  ## if you want number sections at each table header
+highlight: tango  # specifies the syntax highlighting style
+
+---
+
+
+
+
+```{r}
+
+pacman::p_load(tidyverse)
+library(rlang)
+
+```
+
+
+quote() is the most basic quoting function
+
+```{r}
+
+letters[1:5]
+
+quote(letters[1:5])
+
+
+```
+
+#### Delayed evaluation
+eval() gets the value of the expression
+
+```{r}
+
+x <- quote(letters[1:5]) 
+eval(x)
+
+data <- list(letters = LETTERS) 
+ 
+eval(x, data)
+eval_tidy(x, data)
+
+```
+
+#### Programming with grammars
+
+```{r}
+#stringly(nobody, calls, me, coward) #> [1] "nobody calls me coward"
+x <- "chicken" 
+
+#stringly(nobody, calls, me, x)
+#> [1] "nobody calls me x"
+paste("nobody", "calls", "me", x)
+
+#stringly(nobody, calls, me, eval(x))
+
+```
+
+
+```{r}
+
+df <- tibble(x = 1:3, y = 3:1)
+
+filter(df, x == 1)
+
+x = 1:3
+my_var <- enquo(x)
+#> Error in eval(expr, envir, enclos): object 'x' not found
+filter(df, !!(my_var) == 1)
+
+
+```
+#### Misssing Values
+
+```{r}
+
+#This infix function is similar to %||% but is vectorised and provides a default value for missing elements. It is faster than using base::ifelse() and does not perform type conversions.
+c("a", "b", NA, "c") %|% "default"
+
+#Default value for NULL
+#This infix function makes it easy to replace NULLs with a default value. It's inspired by the way that Ruby's or operation (||) works.
+
+
+1 %||% 2
+
+
+NULL %||% 2
+
+```
+
+
+#### Quotation or Quasiqoutation
+
+```{r}
+# Quasiquotation functions quote expressions like base::quote()
+quote(how_many(this))
+expr(how_many(this))
+quo(how_many(this))
+
+# In addition, they support unquoting. Let's store symbols
+# (i.e. object names) in variables:
+this <- sym("apples")
+that <- sym("oranges")
+this
+that
+
+
+# With unquotation you can insert the contents of these variables
+# inside the quoted expression:
+expr(how_many(!!this))
+expr(how_many(!!that))
+
+
+# You can also insert values:
+expr(how_many(!!(1 + 2)))
+quo(how_many(!!(1 + 2)))
+
+# This is why it's often useful to use qq_show() to examine the
+# result of unquotation operators. It uses the same printer as
+# quosures but does not return anything:
+qq_show(how_many(!!(1:10)))
+
+```
+
+```{r}
+# Use `!!!` to add multiple arguments to a function. Its argument
+# should evaluate to a list or vector:
+args <- list(1:3, na.rm = TRUE)
+quo(mean(!!!args))
+
+```
+
+
+
+#### Capturing multiple variables
+It would be nice to extend my_summarise() to accept any number of grouping variables. We need to make three changes:
+
+Use ... in the function definition so our function can accept any number of arguments.
+
+Use quos() to capture all the ... as a list of formulas.
+
+Use !!! instead of !! to splice the arguments into group_by().
+
+```{r}
+df <- tibble(
+  g1 = c(1, 1, 2, 2, 2),
+  g2 = c(1, 2, 1, 2, 1),
+  a = sample(5),
+  b = sample(5)
+)
+
+my_summarise <- function(df, ...) {
+  group_var <- quos(...)
+
+  df %>%
+    group_by(!!! group_var) %>%
+    summarise(a = mean(a))
+}
+
+my_summarise(df, g1, g2)
+
+```
+
+```{r}
+f <- function(x) {
+  quo(x)
+}
+
+x1 <- f(10)
+x2 <- f(100)
+
+x1
+x2
+
+
+get_env(x1)
+
+get_env(x2)
+
+eval_tidy(x1)
+
+eval_tidy(x2)
+
+```
+
+```{r}
+
+```
+

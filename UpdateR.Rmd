@@ -1,0 +1,118 @@
+---
+title: "Update R"
+output:
+  html_document:
+    toc: true
+    theme: united
+author: Nana Boateng
+df_print: paged
+Time: '`r Sys.time()`'
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+toc_depth: 3  # upto three depths of headings (specified by #, ## and ###)
+number_sections: true  ## if you want number sections at each table header
+highlight: tango  # specifies the syntax highlighting style
+
+---
+
+
+
+```{r setup,include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = FALSE,
+                      out.width ="100%",
+                      message = FALSE,
+                      fig.align = 'default', 
+                      warning = FALSE, 
+                      fig.cap ="Fig. 30", 
+                      out.width="100%")
+
+options(repr.plot.height = 10, repr.plot.width = 8)
+options(tidyverse.quiet = TRUE)
+options(dplyr.print_max = 1e9)
+knitr::opts_knit$set(root.dir = normalizePath("/Users/nanaakwasiabayieboateng/Documents/memphisclassesbooks/Time series/Manpower/")) 
+#knitr::read_chunk("example.R")
+
+```
+
+
+
+Update R
+---------------------------------
+
+```{r}
+library(devtools)
+
+#install_github('andreacirilloac/updateR')
+
+library(updateR)
+
+updateR(admin_password = 'abayie148')
+```
+
+check rstudio version
+```{r}
+ version
+```
+
+
+now you can update your packages by typing update.packages() in your RStudio console, and answering 'y' to all of the prompts.
+```{r}
+update.packages(checkBuilt=TRUE)
+```
+
+
+
+```{r}
+# How to update R in RStudio using installr package (for Windows)
+## paste this into the console and run the commands
+## "The updateR() command performs the following: finding the latest R version, downloading it, running the installer, deleting the installation file, copy and updating old packages to the new R installation."
+## more info here: https://cran.r-project.org/web/packages/installr/index.html
+
+install.packages("installr")
+library(installr)
+updateR()
+
+## Watch for small pop up windows. There will be many questions and they don't always pop to the front. 
+## Note: It warns that it might work better in Rgui but I did it in Rstudio and it worked just fine. 
+
+#installing/loading the package:
+if(!require(installr)) {
+install.packages("installr"); require(installr)} #load / install+load installr
+
+# using the package:
+updateR() # this will start the updating process of your R installation.  It will check for newer versions, and if one is available, will guide you through the decisions you'd need to make.
+```
+
+
+Linux/MacOS ->> Open a terminal and type "R" to go into interactive mode and then:
+
+```{r}
+lib_path <- Sys.getenv("R_LIBS_USER")
+install.packages("installr", lib = lib_path)
+install.packages("stringr", lib_path)
+library(stringr, lib.loc = lib_path)
+library(installr, lib.loc = lib_path)
+installr::updateR()
+```
+
+
+
+Updating R Packages
+Updating Out of date Packages
+Updating out of date package that were installed with install.packages() is easy with the update.packages() function.
+
+update.packages()
+Which will ask you for every package if you want to update, to just say yes to everything use ask = FAlSE.
+
+update.packages(ask = FALSE)
+Unfortunately this won’t update packages installed by devtools::install_github()
+
+Updating all Packages after R update
+On Windows this is hanlded by the package installr. But for other operating systems, after updating R, a lot of packages might have been build under the old R version and it would be safer to re-install all the packages already installed. This can be done with the following commands. Again this won’t update packages installed with devtools::install_github()
+
+## get packages installed
+packs = as.data.frame(installed.packages(.libPaths()[1]), stringsAsFactors = F)
+
+## and now re-install install packages using install.packages()
+install.packages(packs$Package)

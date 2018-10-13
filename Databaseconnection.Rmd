@@ -1,0 +1,104 @@
+---
+title: "Connect R to a Database"
+output: html_notebook
+author: Nana Boateng
+df_print: paged
+Time: '`r Sys.time()`'
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+---
+
+https://stackoverflow.com/questions/39401230/connect-r-to-a-sql-server-database-engine
+
+```{r}
+library("RODBC")
+#library("XLConnect")
+
+dbhandle <- odbcDriverConnect('driver={SQL Server};server=Name_Of_Server;database=Name_Of_DB;trusted_connection=true')
+currTableSQL<-paste("SELECT * From Your_Table",sep="")
+currTableDF<-sqlQuery(dbhandle,currTableSQL)
+
+```
+
+
+
+```{r}
+library(RODBC)
+dbconnection <- odbcDriverConnect("Driver=ODBC Driver 11 for SQL Server;Server=YourDBName\\SQLEXPRESS; Database=TestDB;Uid=; Pwd=; trusted_connection=yes")
+initdata <- sqlQuery(dbconnection,paste("select * from MyTable;"))
+odbcClose(channel)
+```
+
+
+2.1 Making a connection
+ODBC works by setting up a connection or channel from the client (here RODBC) to the DBMSs as specified in the DSN. Such connections are normally used throughout a session, but should be closed explicitly at the end of the session—however RODBC will clear up after you if you forget (with a warning that might not be seen in a GUI environment). There can be many simultaneous connections.
+The simplest way to make a connection is
+```{r}
+
+library(RODBC)
+ch <- odbcConnect("some dsn")
+#and when you are done with it,
+close(ch)
+# or if you prefer
+odbcClose(ch)
+```
+If the DBMS user and password are needed and not stored in the DSN, they can be supplied by e.g.
+```{r}
+
+ch <- odbcConnect("some dsn", uid = "user", pwd = "****")
+```
+
+Some drivers will return all visible table-like objects, not just those owned by you. In that case you may want to restrict the scope by e.g.
+```{r}
+sqlTables(ch, tableType = "TABLE") 
+sqlTables(ch, schema = "some pattern") 
+sqlTables(ch, tableName = "some pattern")
+```
+
+
+
+```{r}
+library(RSQLServer)
+SQLServer()
+    ## S4 method for signature 'SQLServerDriver'
+dbConnect(drv, server, file = NULL,
+      database = NULL, type = NULL, port = NULL, properties = NULL)
+
+
+
+## Not run:
+    SQLServer()
+    ## End(Not run)
+    # View sql.yaml file bundled in package
+    file <- system.file("extdata", "sql.yaml", package = "RSQLServer")
+    readLines(file)
+    # Connect using ~/sql.yaml file
+    ## Not run:
+    if (have_test_server()) {
+     dbConnect(RSQLServer::SQLServer(), "TEST")
+    }
+    # Example where ~/sql.yaml does not exist or where the server
+    # is not in the YAML file.
+    dbConnect(RSQLServer::SQLServer(), server="11.1.111.11", port=1434,
+       properties=list(useNTLMv2="true", domain="myco", user="me",
+         password="asecret"))
+
+
+```
+
+
+```{r}
+library(RJDBC)
+
+ ## Not run:
+    drv <- JDBC("com.mysql.jdbc.Driver",
+      "/etc/jdbc/mysql-connector-java-3.1.14-bin.jar", " ")
+    conn <- dbConnect(drv, "jdbc:mysql://localhost/test")
+    dbListTables(conn)
+    data(iris)
+    dbWriteTable(conn, "iris", iris)
+    dbGetQuery(conn, "select count(*) from iris")
+    d <- dbReadTable(conn, "iris")
+    ## End(Not run)
+
+```
+

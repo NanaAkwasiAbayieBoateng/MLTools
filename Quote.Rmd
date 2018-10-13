@@ -1,0 +1,201 @@
+---
+title: "Tutorial on using Quotes"
+output: html_notebook
+author: Nana Boateng
+df_print: paged
+Time: '`r Sys.time()`'
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+---
+
+
+
+
+```{r setup,include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = FALSE,
+                      out.width ="100%",
+                      message = FALSE,
+                      fig.align = 'default', 
+                      warning = FALSE, 
+                      fig.cap ="Fig. 30", 
+                      out.width="100%")
+
+```
+
+
+
+```{r}
+pacman::p_load(tidyverse,lubridate,rlang)
+```
+
+Suppose we want to put double quotation marks around a group of words.
+```{r cars}
+words<-"Monday, Tuesday, Wednesday, Thursday,Friday"
+
+
+paste("2016-06-01",today(),sep = ",")
+
+sapply(strsplit(words, '[, ]+'), function(x) toString(dQuote(x)))
+
+cat(sapply(strsplit(words, '[, ]+'), function(x) toString(dQuote(x))))
+
+
+cat(sapply(strsplit(words, '[, ]+'), function(x) toString(sQuote(x))))
+
+
+
+```
+
+
+```{r}
+Hmisc::Cs(words)
+
+
+cat(sapply(strsplit(paste("2016-06-01",today(),sep = ","), '[, ]+'), function(x) toString(dQuote(x))))
+
+paste(dQuote(sub(" ","",unlist(strsplit(words,split = ",")))),collapse = ", ")
+
+
+
+```
+
+
+```{r}
+as.vector(words)
+
+Hmisc::Cs(quote(as.vector(words)))
+
+dQuote(words)
+
+w=as.list(words)
+
+sapply(as.list(words),dQuote)
+
+strsplit(words, '[, ]+')
+
+sapply(strsplit(words, '[, ]+'),dQuote)
+
+quo(w)
+
+```
+
+
+```{r}
+end=today()
+
+cat(paste(sQuote("2016-06-01"),sQuote(end),sep=","), "\n")
+
+
+cat(paste(dQuote("2016-06-01"),dQuote(end),sep=","), "\n")
+```
+
+```{r}
+# quo() is a quotation function just like expr() and quote():
+expr(mean(1:10 * 2))
+quo(mean(1:10 * 2))
+
+```
+
+```{r}
+
+# It supports quasiquotation and allows unquoting (evaluating
+# immediately) part of the quoted expression:
+quo(mean(!! 1:10 * 2))
+
+quo(!! mean(1:10 * 2))
+```
+
+```{r}
+# What makes quo() often safer to use than quote() and expr() is
+# that it keeps track of the contextual environment. This is
+# especially important if you're referring to local variables in
+# the expression:
+var <- "foo"
+quo <- quo(var)
+quo
+
+#evaluate
+quo(!!var)
+#Equivalently
+eval_tidy(var)
+```
+
+
+```{r}
+# Here `quo` quotes `var`. Let's check that it also captures the
+# environment where that symbol is defined:
+identical(get_env(quo), get_env())
+env_has(quo, "var")
+
+```
+
+
+```{r}
+# Keeping track of the environment is important when you quote an
+# expression in a context (that is, a particular function frame)
+# and pass it around to other functions (which will be run in their
+# own evaluation frame):
+fn <- function() {
+  foobar <- 10
+  quo(foobar * 2)
+}
+quo <- fn()
+quo
+```
+
+```{r}
+# `foobar` is not defined here but was defined in `fn()`'s
+# evaluation frame. However, the quosure keeps track of that frame
+# and is safe to evaluate:
+eval_tidy(quo)
+
+
+```
+
+
+```{r}
+# Quoting as a quosure is necessary to preserve scope information
+# and make sure objects are looked up in the right place. However,
+# there are situations where it can get in the way. This is the
+# case when you deal with non-tidy NSE functions that do not
+# understand formulas. You can inline the RHS of a formula in a
+# call thanks to the UQE() operator:
+nse_function <- function(arg) substitute(arg)
+var <- locally(quo(foo(bar)))
+quo(nse_function(UQ(var)))
+quo(nse_function(UQE(var)))
+
+
+# This is equivalent to unquoting and taking the RHS:
+quo(nse_function(!! get_expr(var)))
+
+```
+
+```{r}
+# One of the most important old-style NSE function is the dollar
+# operator. You need to use UQE() for subsetting with dollar:
+var <- quo(cyl)
+quo(mtcars$UQE(var))
+
+
+# `!!`() is also treated as a shortcut. It is meant for situations
+# where the bang operator would not parse, such as subsetting with
+# $. Since that's its main purpose, we've made it a shortcut for
+# UQE() rather than UQ():
+var <- quo(cyl)
+quo(mtcars$`!!`(var))
+
+
+```
+
+```{r}
+# When a quosure is printed in the console, the brackets indicate
+# if the enclosure is the global environment or a local one:
+locally(quo(foo))
+
+# Literals are enquosed with the empty environment because they can
+# be evaluated anywhere. The brackets indicate "empty":
+quo(10L)
+```
+

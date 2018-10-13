@@ -1,0 +1,642 @@
+---
+title: "rsample package tutorial"
+output: html_notebook
+df_print: paged
+author: "Nana  Boateng"
+Time: '`r Sys.time()`'
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+---
+
+
+
+```{r setup,include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = FALSE,
+                      out.width ="100%",
+                      message = FALSE,
+                      fig.align = 'default', 
+                      warning = FALSE, 
+                      fig.cap ="Fig. 30", 
+                      out.width="100%")
+
+options(repr.plot.height = 5, repr.plot.width = 6)
+options(tidyverse.quiet = TRUE)
+
+```
+
+
+
+
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+
+```{r}
+#install.packages("rsample")
+
+## For the devel version:
+require(devtools)
+#install_github("topepo/rsample")
+```
+
+
+```{r}
+library(rsample)
+library(mlbench)
+library(pryr)
+library(tidyverse)
+
+data(LetterRecognition)
+
+```
+
+
+```{r}
+LetterRecognition%>%head()
+LetterRecognition%>%dim()
+```
+
+
+
+
+```{r}
+
+
+object_size(LetterRecognition)
+ 
+set.seed(35222)
+boots <- bootstraps(LetterRecognition, times = 5)
+
+object_size(boots)
+
+# Object size per resample
+object_size(boots)/nrow(boots)
+
+
+# Fold increase is <<< 50
+as.numeric(object_size(boots)/object_size(LetterRecognition))
+
+```
+
+
+
+```{r}
+boots$splits[[1]]
+```
+
+```{r}
+boots$id
+
+boots
+
+```
+
+```{r}
+boots$splits%>%unlist()%>%head()
+```
+Let’s look at one of the rsplit objects
+```{r}
+first_resample <- boots$splits[[1]]
+first_resample
+```
+
+```{r}
+as.data.frame(first_resample)%>%head()
+```
+
+```{r}
+assessment(first_resample)%>%head()
+analysis(first_resample)%>%head()
+```
+
+
+
+
+```{r}
+as.data.frame(first_resample, data = "assessment")%>%head()
+```
+
+Model Assessment
+Let’s fit a logistic regression model to the data with model terms for the job satisfaction, gender, and monthly income.
+
+If we were fitting the model to the entire data set, we might model attrition using
+
+```{r}
+glm(Attrition ~ JobSatisfaction + Gender + MonthlyIncome, data = attrition, family = binomial)
+```
+
+For convenience, we’ll create a formula object that will be used later:
+
+```{r}
+mod_form <- as.formula(Attrition ~ JobSatisfaction + Gender + MonthlyIncome)
+```
+
+
+
+To evaluate this model, we will use 10 repeats of 10-fold cross-validation and use the 100 holdout samples to evaluate the overall accuracy of the model.
+
+First, let’s make the splits of the data:
+```{r}
+rs_obj <- vfold_cv(attrition, V = 10, repeats = 10)
+rs_obj
+```
+
+Now let’s write a function that will, for each resample:
+
+obtain the analysis data set (i.e. the 90% used for modeling)
+fit a logistic regression model
+predict the assessment data (the other 10% not used for the model) using the broom package
+determine if each sample was predicted correctly.
+Here is our function:
+
+Convert an `rsplit` object to a data frame
+The analysis or assessment code can be returned as a data frame (as dictated by the `data` argument) using `as.data.frame.rsplit`. `analysis` and `assessment` are shortcuts.
+
+# S3 method for rsplit
+as.data.frame(x, row.names = NULL, optional = FALSE,
+  data = "analysis", ...)
+
+analysis(x, ...)
+
+assessment(x, ...)
+
+
+Convert an `rsplit` object to a data frame
+The analysis or assessment code can be returned as a data frame (as dictated by the `data` argument) using `as.data.frame.rsplit`. `analysis` and `assessment` are shortcuts.
+
+# S3 method for rsplit
+as.data.frame(x, row.names = NULL, optional = FALSE,
+  data = "analysis", ...)
+
+analysis(x, ...)
+
+assessment(x, ...)
+
+
+```{r}
+library(broom)
+## splits will be the `rsplit` object with the 90/10 partition
+holdout_results <- function(splits, ...) {
+  # Fit the model to the 90%
+  mod <- glm(..., data = analysis(splits), family = binomial)
+  # Save the 10%
+  holdout <- assessment(splits)
+  # `augment` will save the predictions with the holdout data set
+  res <- broom::augment(mod, newdata = holdout)
+  # Class predictions on the assessment set from class probs
+  lvls <- levels(holdout$Attrition)
+  predictions <- factor(ifelse(res$.fitted > 0, lvls[2], lvls[1]),
+                        levels = lvls)
+  # Calculate whether the prediction was correct
+  res$correct <- predictions == holdout$Attrition
+  # Return the assessment data set with the additional columns
+  res
+}
+
+```
+
+
+For example:
+```{r}
+example <- holdout_results(rs_obj$splits[[1]],  mod_form)
+dim(example)
+
+dim(assessment(rs_obj$splits[[1]]))
+
+## newly added columns:
+example[1:10, setdiff(names(example), names(attrition))]
+```
+
+For this model, the .fitted value is the linear predictor in log-odds units.
+
+To compute this data set for each of the 100 resamples, we’ll use the map function from the purrr package:
+
+```{r}
+library(purrr)
+rs_obj$results <- map(rs_obj$splits,
+                      holdout_results,
+                      mod_form)
+rs_obj
+```
+
+Now we can compute the accuracy values for all of the assessment data sets:
+
+```{r}
+rs_obj$accuracy <- map_dbl(rs_obj$results, function(x) mean(x$correct))
+summary(rs_obj$accuracy)
+```
+
+Keep in mind that the baseline accuracy to beat is the rate of non-attrition, which is 0.839. Not a great model so far.
+
+Using the Bootstrap to Make Comparisons
+Traditionally, the bootstrap has been primarily used to empirically determine the sampling distribution of a test statistic. Given a set of samples with replacement, a statistic can be calculated on each analysis set and the results can be used to make inferences (such as confidence intervals).
+
+For example, are there differences in the median monthly income between genders?
+
+```{r}
+ggplot(attrition, aes(x = Gender, y = MonthlyIncome)) + 
+  geom_boxplot() + 
+  scale_y_log10()
+```
+
+If we wanted to compare the genders, we could conduct a t-test or rank-based test. Instead, let’s use the bootstrap to see if there is a difference in the median incomes for the two groups. We need a simple function to compute this statistic on the resample:
+
+```{r}
+median_diff <- function(splits) {
+  x <- analysis(splits)
+  median(x$MonthlyIncome[x$Gender == "Female"]) - 
+      median(x$MonthlyIncome[x$Gender == "Male"])     
+}
+```
+
+Now we would create a large number of bootstrap samples (say 2000+). For illustration, we’ll only do 500 in this document.
+
+```{r}
+set.seed(353)
+bt_resamples <- bootstraps(attrition, times = 500)
+```
+
+This function is then computed across each resample:
+
+```{r}
+bt_resamples$wage_diff <- map_dbl(bt_resamples$splits, median_diff)
+```
+
+The bootstrap distribution of this statistic has a slightly bimodal and skewed distribution:
+
+```{r}
+ggplot(bt_resamples, aes(x = wage_diff)) + 
+  geom_line(stat = "density", adjust = 1.25) + 
+  xlab("Difference in Median Monthly Income (Female - Male)")
+```
+
+The variation is considerable in this statistic. One method of computing a confidence interval is to take the percentiles of the bootstrap distribution. A 95% confidence interval for the difference in the means would be:
+```{r}
+quantile(bt_resamples$wage_diff, 
+         probs = c(0.025, 0.500, 0.975))
+```
+
+
+On average, there is no evidence for a difference in the genders.
+
+Bootstrap Estimates of Model Coefficients
+Unless there is already a column in the resample object that contains the fitted model, a function can be used to fit the model and save all of the model coefficients. The broom package package has a tidy function that will save the coefficients in a data frame. Instead of returning a data frame with a row for each model term, we will save a data frame with a single row and columns for each model term. As before, purrr::map can be used to estimate and save these values for each split.
+
+```{r}
+glm_coefs <- function(splits, ...) {
+  ## use `analysis` or `as.data.frame` to get the analysis data
+  mod <- glm(..., data = analysis(splits), family = binomial)
+  as.data.frame(t(coef(mod)))
+}
+bt_resamples$betas <- map(.x = bt_resamples$splits, 
+                          .f = glm_coefs, 
+                          mod_form)
+bt_resamples
+
+
+bt_resamples$betas[[1]]
+```
+
+Keeping Tidy
+As previously mentioned, the broom package contains a class called tidy that created representations of objects that can be easily used for analysis, plotting, etc. rsample contains tidy methods for rset and rsplit objects. For example:
+
+```{r}
+first_resample <- bt_resamples$splits[[1]]
+class(first_resample)
+#> [1] "rsplit"     "boot_split"
+tidy(first_resample)
+```
+
+and
+
+```{r}
+class(bt_resamples)
+#> [1] "bootstraps" "rset"       "tbl_df"     "tbl"        "data.frame"
+tidy(bt_resamples)
+```
+
+
+
+#### Time Series Analysis Example
+“Demo Week: Tidy Forecasting with sweep” is an excellent article that uses tidy methods with time series. This article uses their analysis with rsample to get performance estimates for future observations using rolling forecast origin resampling.
+
+The data are sales of alcoholic beverages and can be found at the Federal Reserve Back of St. Louis website. From this page, download the csv file. readr is used to bring in the data:
+
+col_spec <- cols(
+  DATE = col_date(format = ""),
+  S4248SM144NCEN = col_double()
+)
+
+library(readr)
+drinks <- read_csv("S4248SM144NCEN.csv", col_types = col_spec) 
+str(drinks, give.att = FALSE)
+## Classes 'tbl_df', 'tbl' and 'data.frame':    309 obs. of  2 variables:
+##  $ DATE          : Date, format: "1992-01-01" "1992-02-01" ...
+##  $ S4248SM144NCEN: num  3459 3458 4002 4564 4221 ...
+Each row is a month of sales (in millions of US dollars).
+
+Suppose that predictions for one year ahead were needed and the model should use the most recent data from the last 20 years. To setup this resampling scheme:
+
+library(rsample)
+roll_rs <- rolling_origin(
+  drinks, 
+  initial = 12 * 20, 
+  assess = 12,
+  cumulative = FALSE
+  )
+nrow(roll_rs)
+## [1] 58
+roll_rs
+## # Rolling origin forecast resampling 
+## # A tibble: 58 x 2
+##          splits      id
+##          <list>   <chr>
+##  1 <S3: rsplit> Slice01
+##  2 <S3: rsplit> Slice02
+##  3 <S3: rsplit> Slice03
+##  4 <S3: rsplit> Slice04
+##  5 <S3: rsplit> Slice05
+##  6 <S3: rsplit> Slice06
+##  7 <S3: rsplit> Slice07
+##  8 <S3: rsplit> Slice08
+##  9 <S3: rsplit> Slice09
+## 10 <S3: rsplit> Slice10
+## # ... with 48 more rows
+Each split element contains the information about that resample:
+
+roll_rs$splits[[1]]
+## <240/12/309>
+For plotting, let’s index each split by the first day of the assessment set:
+
+get_date <- function(x) 
+  min(assessment(x)$DATE)
+
+start_date <- map(roll_rs$splits, get_date)
+roll_rs$start_date <- do.call("c", start_date)
+head(roll_rs$start_date)
+## [1] "2012-01-01" "2012-02-01" "2012-03-01" "2012-04-01" "2012-05-01"
+## [6] "2012-06-01"
+This resampling scheme has 58 splits of the data so that there will be 58 ARIMA models that are fit. To create the models, the auto.arima function from the forecast package is used. The functions analysis and assessment return the data frame, so another step converts the data in to a ts object called mod_dat using a function in the timetk package.
+
+library(forecast)  # for `auto.arima`
+library(timetk)    # for `tk_ts`
+library(zoo)       # for `as.yearmon`
+
+fit_model <- function(x, ...) {
+  # suggested by Matt Dancho:
+  x %>%
+    analysis() %>%
+    # Since the first day changes over resamples, adjust it
+    # based on the first date value in the data frame 
+    tk_ts(start = .$DATE[[1]] %>% as.yearmon(), 
+          freq = 12, 
+          silent = TRUE) %>%
+    auto.arima(...)
+}
+Each model is saved in a new column:
+
+library(purrr)
+
+roll_rs$arima <- map(roll_rs$splits, fit_model)
+
+# For example:
+
+roll_rs$arima[[1]]
+## Series: . 
+## ARIMA(2,1,2)(2,1,1)[12] 
+## 
+## Coefficients:
+##          ar1     ar2    ma1     ma2   sar1    sar2    sma1
+##       -0.994  -0.502  0.024  -0.414  0.404  -0.334  -0.554
+## s.e.   0.106   0.081  0.111   0.125  0.100   0.076   0.083
+## 
+## sigma^2 estimated as 71948:  log likelihood=-1591
+## AIC=3199   AICc=3199   BIC=3226
+(There are some warnings produced by these first regarding extra columns in the data that can be ignored)
+
+Using the model fits, performance will be measured in two ways:
+
+interpolation error will measure how well the model fits to the data that were used to create the model. This is most likely optimistic since no holdout method is used.
+extrapolation or forecast error evaluates the efficacy of the model on the data from the following year (that were not used in the model fit).
+In each case, the mean absolute percent error (MAPE) is the statistic used to characterize the model fits. The interpolation error can be computed from the Arima object. to make things easy, the sweep package’s sw_glance function is used:
+
+library(sweep)
+
+roll_rs$interpolation <- map_dbl(
+  roll_rs$arima,
+  function(x) 
+    sw_glance(x)[["MAPE"]]
+  )
+summary(roll_rs$interpolation)
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##    2.84    2.90    2.92    2.93    2.95    3.13
+For the extrapolation error, the model and split objects are required. Using these:
+
+library(dplyr)
+
+get_extrap <- function(split, mod) {
+  n <- nrow(assessment(split))
+  # Get assessment data
+  pred_dat <- assessment(split) %>%
+    mutate(
+      pred = as.vector(forecast(mod, h = n)$mean),
+      pct_error = ( S4248SM144NCEN - pred ) / S4248SM144NCEN * 100
+    )
+  mean(abs(pred_dat$pct_error))
+}
+
+roll_rs$extrapolation <- 
+  map2_dbl(roll_rs$splits, roll_rs$arima, get_extrap)
+
+summary(roll_rs$extrapolation)
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##    2.37    3.27    3.66    3.75    4.26    5.44
+What do these error estimates look like over time?
+
+library(ggplot2)
+library(tidyr)
+
+roll_rs %>%
+  select(interpolation, extrapolation, start_date) %>%
+  as.data.frame %>%
+  gather(error, MAPE, -start_date) %>%
+  ggplot(aes(x = start_date, y = MAPE, col = error)) + 
+  geom_point() + 
+  geom_line() + 
+  theme_bw() + 
+  theme(legend.position = "top")
+  
+  
+  
+#### Grid Search Tuning of Keras Models
+Here we demonstrate a simple grid search to optimize a tuning parameter of a keras neural network.
+
+The Ames housing data is used to demonstrate. There are a number of predictors for these data but, for simplicity, we’ll see how far we can get by just using the geocodes for the properties as predictors of price. The outcome will be modeled on the log10 scale.
+
+library(AmesHousing)
+library(dplyr)
+ames <- make_ames() %>%
+  select(Sale_Price, Longitude, Latitude)
+To be consistent with other analyses of these data, a training/test split is made. However, this article focuses on the training set.
+
+Normally, feature preprocessing should be estimated within the resampling process to get generalizable estimates of performance. Here, the two predictors are simply centered and scaled beforehand to avoid complexity in this analysis. However, this is generally a bad idea and the article on recipes describes a proper methodology for preprocessing the data.
+
+library(rsample)
+set.seed(4595)
+data_split <- initial_split(ames, strata = "Sale_Price")
+
+ames_train <- training(data_split) %>%
+  mutate(Sale_Price = log10(Sale_Price),
+         Longitude  = scale(Longitude, center = TRUE),
+         Latitude   = scale(Latitude, center = TRUE))
+The resample the model, simple 10-fold cross-validation is done such that the splits use the outcome as a stratification variable. On average, there should be 218 properties in the assessment set and this should be enough to obtain good estimates of the model RMSE.
+
+set.seed(2453)
+cv_splits <- vfold_cv(ames_train, v = 10, strata = "Sale_Price")
+A single layer feed-forward neural network with 10 hidden units will be used to model these data. There are a great many tuning parameters for these models including those for structural aspects (e.g. number of hidden units, activation type, number of layers), the optimization (momentum, dropout rate, etc.), and so on. For simplicity, this article will only optimize the number of training epochs (i.e. iterations); basically this is testing for early stopping.
+
+A function is needed to compute the model on the analysis set, predict the assessment set, and compute the holdout root mean squared error (in log10 units). The function below constructs the model sequentially and takes the number of epochs as a parameter. The argument split will be used to pass a single element of cv_splits$splits. This object will contain the two splits of the data for a single resample. The ellipses (...) will be used to pass arbitrary arguments to keras::fit.
+
+In this function, the seed is set. A few of the model components, such as initializer_glorot_uniform and layer_dropout, use random numbers and their specific seeds are set from the session’s seed. This helps with reproducibility.
+
+library(keras)
+library(yardstick)
+library(purrr)
+
+mlp_rmse <- function(epoch, split, ...) {
+  # Set the seed to get reproducible starting values and dropouts
+  set.seed(4109)
+  
+  # Clearing the session after the computations have finished
+  # clears memory used by the last trial in preparation for 
+  # the next iteration. 
+  on.exit(keras::backend()$clear_session())
+  
+  # Define a single layer MLP with dropout and ReLUs
+  model <- keras_model_sequential()
+  model %>% 
+    layer_dense(
+      units = 10, 
+      activation = 'relu', 
+      input_shape = 2,
+      kernel_initializer = initializer_glorot_uniform()
+    ) %>% 
+    layer_dropout(rate = 0.4) %>% 
+    layer_dense(units = 1, activation = "linear")
+
+  model %>% compile(
+    loss = 'mean_squared_error',
+    optimizer = optimizer_rmsprop(),
+    metrics = 'mean_squared_error'
+  )
+  
+  # The data used for modeling (aka the "analysis" set)
+  geocode <- analysis(split) %>%
+    select(-Sale_Price) %>%
+    as.matrix()
+  
+  model %>% fit(
+    x = geocode, 
+    y = analysis(split)[["Sale_Price"]], 
+    epochs = epoch,
+    ...
+    )
+  
+  # Now obtain the holdout set for prediction
+  holdout <- assessment(split)
+  pred_geocode <- holdout %>%
+    select(-Sale_Price) %>%
+    as.matrix()
+  
+  holdout$predicted <- predict(model, pred_geocode)[,1]
+
+  rmse(holdout, truth = Sale_Price, estimate = predicted)
+}
+Let’s execute the function on the first fold of the data using a batch size of 128 and disable the print/plotting of the optimization:
+
+cv_splits$splits[[1]]
+## <1965/221/2186>
+mlp_rmse(
+  epoch = 100,
+  cv_splits$splits[[1]],
+  # now options to keras::fit
+  batch_size = 128, 
+  verbose = 0
+)
+## [1] 0.321477
+This works for a single resample and a single epoch setting. To tune over epochs, another function uses map to work over the tuning parameter for a specific resample. This is more advantageous than fixing the tuning parameter and then iterating over the data. If there was a complex feature engineering process being used, it only needs to be called once if functions are configured so that the inner loop is over the tuning parameters.
+
+The result value is a tibble with the tuning parameter values, the performance estimates, and an indicator for the fold.
+
+across_grid <- function(split, ...) {
+  # Create grid
+  epoch_values <- tibble(epoch = seq(50, 600, by = 50)) 
+
+  # Execute grid for this resample
+  epoch_values$rmse <- map_dbl(
+    epoch_values$epoch, 
+    mlp_rmse,
+    split = split, 
+    # extra options for `fit`
+    ...
+  )
+  # Now attach the resample indicators using `labels`
+  cbind(epoch_values, labels(split))
+}
+Note that the grid could easily have a been multidimensional so that many parameters could be optimized using a regular grid or via random search. If that were the case, the candidate tuning parameter values could be in rows and the parameters in columns and mlp_rmse would then map the columns in the tibble to their respective arguments.
+
+map_df is used to operate over the folds. This will row-bind the resulting data frames together so that a single data set is assembled with the individual resampling results.
+
+tune_results <- 
+  map_df(
+    cv_splits$splits,
+    across_grid,
+    batch_size = 128, 
+    verbose = 0
+  )
+head(tune_results)
+##   epoch      rmse     id
+## 1    50 0.5871970 Fold01
+## 2   100 0.3351279 Fold01
+## 3   150 0.2692531 Fold01
+## 4   200 0.2093771 Fold01
+## 5   250 0.1925796 Fold01
+## 6   300 0.1683193 Fold01
+The mean RMSE per epoch is computed and plotted along with the individual curves for each resample.
+
+mean_values <- tune_results %>%
+  group_by(epoch) %>%
+  summarize(rmse = mean(rmse))
+mean_values
+## # A tibble: 12 x 2
+##    epoch      rmse
+##    <dbl>     <dbl>
+##  1    50 0.9048910
+##  2   100 0.4208690
+##  3   150 0.2969051
+##  4   200 0.2313009
+##  5   250 0.2022007
+##  6   300 0.1684118
+##  7   350 0.1505222
+##  8   400 0.1459717
+##  9   450 0.1452483
+## 10   500 0.1448865
+## 11   550 0.1451376
+## 12   600 0.1448295
+library(ggplot2)
+
+ggplot(mean_values, aes(x = epoch, y = rmse)) + 
+  geom_point() + 
+  geom_line() + 
+  geom_line(data = tune_results, aes(group = id), alpha = 0.1) + 
+  scale_y_continuous(trans = "log2") +
+  theme_bw()
+
+
+For this analysis, there doesn’t seem to be any overfitting issues with a large number of iterations (since the RMSE does not increase).
+
+caret includes some pre-defined keras models for single layer networks that can be used to optimize the model across a number of parameters.  
+

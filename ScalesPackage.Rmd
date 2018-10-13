@@ -1,0 +1,1224 @@
+---
+title: "Scales"
+output: html_notebook
+---
+
+
+```{r}
+library(scales)
+library(Hmisc)
+```
+
+
+
+
+```{r}
+one = c(1:5)
+
+paste0(one,"")
+
+paste(one,"")
+
+
+paste0(one,sep= ",")
+
+
+paste0(one,collapse = "")
+
+cat(paste(shQuote(one, type="cmd"), collapse=", "))
+
+
+
+```
+
+
+```{r}
+paste0(one,sep= "")
+```
+
+
+```{r}
+cat(paste0(shQuote(one, type="cmd"), collapse=", "))
+
+```
+
+```{r}
+paste0(sprintf("'%d'", 1:4), collapse = ", ")
+```
+
+
+
+```{r}
+dput(as.character(one))
+paste(shQuote(one), collapse=", ")
+
+write.table(matrix(as.character(one),nrow=1), sep=",",
+              row.names=FALSE, col.names=FALSE)
+
+write.csv(matrix(as.character(one),nrow=1),row.names=FALSE)
+
+
+```
+
+
+
+
+```{r}
+paste("'",as.character(one),"'",collapse=", ",sep="")
+
+rs <- paste("\"",as.character(one),"\"",collapse=", ",sep="")
+cat(rs)
+```
+
+
+```{r}
+one = c(1:5)
+
+
+
+Hmisc::Cs(a,b,c,d)
+
+
+predictor=Hmisc::Cs( Age, Employment.Primarily.retired..or, Employment.Unable.to.work., race_white.Yes, Employment.Self.employed.)
+
+predictor
+
+```
+
+
+
+```{r}
+comma_format()(c(1, 1e3, 2000, 1e6))
+comma_format(digits = 9)(c(1, 1e3, 2000, 1e6))
+comma(c(1, 1e3, 2000, 1e6))
+
+
+```
+
+
+```{r}
+# If you're European you can switch . and , with the more general
+# format_format
+point <- format_format(big.mark = ".", decimal.mark = ",", scientific = FALSE)
+point(c(1, 1e3, 2000, 1e6))
+point(c(1, 1.021, 1000.01))
+```
+
+
+
+
+```{r}
+pretty_breaks()(1:10)
+pretty_breaks()(1:100)
+
+```
+
+```{r}
+pretty_breaks()(as.Date(c("2008-01-01", "2009-01-01")))
+pretty_breaks()(as.Date(c("2008-01-01", "2090-01-01")))
+```
+
+
+
+```{r}
+library(ggplot2)
+library(scales)       
+ggplot(diamonds) + geom_point(aes(x = carat, y =  price)) + scale_y_continuous(labels = dollar_format(suffix = "€", prefix = ""))
+```
+
+```{r}
+library(ggplot2)
+library(scales)       
+ggplot(diamonds) + geom_point(aes(x = carat, y =  price)) + scale_y_continuous(labels = dollar_format(suffix = "", prefix = "$"))
+```
+
+
+
+```{r}
+library(ggplot2)
+library(scales)       
+ggplot(diamonds) + geom_point(aes(x = carat, y =  price)) + scale_y_continuous(labels = percent_format())
+```
+
+
+
+
+Modify colour transparency. Vectorised in both colour and alpha
+
+```{r}
+alpha("red", 0.1)
+alpha(colours(), 0.5)
+#alpha("red", seq(0, 1, length.out = 10))
+```
+
+
+Point area palette (continuous).
+
+```{r}
+area_pal(range = c(1, 6))
+```
+
+
+```{r}
+show_col(brewer_pal()(10))
+    show_col(brewer_pal("div")(6))
+    
+
+```
+
+
+```{r}
+show_col(brewer_pal(palette = "Greens")(5))
+    # Can use with gradient_n to create a continous gradient
+    cols <- brewer_pal("div")(5)
+    show_col(gradient_n_pal(cols)(seq(0, 1, length.out = 30)))
+```
+
+
+Compute breaks for continuous scale.
+
+cbreaks(range, breaks = extended_breaks(), labels = scientific_format())
+
+```{r}
+ cbreaks(c(0, 100))
+    cbreaks(c(0, 100), pretty_breaks(3))
+    cbreaks(c(0, 100), pretty_breaks(10))
+    cbreaks(c(1, 100), log_breaks())
+    cbreaks(c(1, 1e4), log_breaks())
+    cbreaks(c(0, 100), labels = math_format())
+    cbreaks(c(0, 1), labels = percent_format())
+    cbreaks(c(0, 1e6), labels = comma_format())
+    cbreaks(c(0, 1e6), labels = dollar_format())
+    cbreaks(c(0, 30), labels = dollar_format())
+    # You can also specify them manually:
+    cbreaks(c(0, 100), breaks = c(15, 20, 80))
+    cbreaks(c(0, 100), breaks = c(15, 20, 80), labels = c(1.5, 2.0, 8.0))
+    cbreaks(c(0, 100), breaks = c(15, 20, 80),
+labels = expression(alpha, beta, gamma))
+```
+
+
+
+Censor any values outside of range.
+censor(x, range = c(0, 1), only.finite = TRUE)
+
+```{r}
+censor(c(-1, 0.5, 1, 2, NA))
+```
+
+
+```{r}
+censor(c(-3, 4.5, 1, 2, NA),range=c(-2,2))
+```
+
+
+Modify standard R colour in hcl colour space.
+col2hcl(colour, h, c, l, alpha = 1)
+```{r}
+
+col2hcl(colors())
+```
+
+
+
+Fast color interpolation
+colour_ramp(colors, na.color = NA, alpha = FALSE)
+
+```{r}
+#colour_ramp(colors(), na.color = NA, alpha = FALSE)
+```
+
+
+Color mapping
+
+col_numeric(palette, domain, na.color = "#808080")
+    col_bin(palette, domain, bins = 7, pretty = TRUE, na.color = "#808080")
+    col_quantile(palette, domain, n = 4, probs = seq(0, 1, length.out = n + 1),
+      na.color = "#808080")
+    col_factor(palette, domain, levels = NULL, ordered = FALSE,
+      na.color = "#808080")
+      
+      
+```{r}
+pal <- col_bin("Greens", domain = 0:100)
+    show_col(pal(sort(runif(10, 60, 100))))
+    # Exponential distribution, mapped continuously
+    show_col(col_numeric("Blues", domain = NULL)(sort(rexp(16))))
+    # Exponential distribution, mapped by interval
+    show_col(col_bin("Blues", domain = NULL, bins = 4)(sort(rexp(16))))
+    # Exponential distribution, mapped by quantile
+    show_col(col_quantile("Blues", domain = NULL)(sort(rexp(16))))
+    # Categorical data; by default, the values being colored span the gamut...
+    #show_col(col_factor("RdYlBu")(LETTERS[1:5]))
+    # ...unless the data is a factor, without droplevels...
+    #show_col(col_factor("RdYlBu", domain = NULL)(factor(LETTERS[1:5], levels=LETTERS)))
+    # ...or the domain is stated explicitly.
+    #show_col(col_factor("RdYlBu", levels = LETTERS)(LETTERS[1:5]))
+```
+
+
+
+Continuous scale.
+cscale(x, palette, na.value = NA_real_, trans = identity_trans())
+
+```{r}
+with(mtcars, plot(disp, mpg, cex = cscale(hp, rescale_pal())))
+    with(mtcars, plot(disp, mpg, cex = cscale(hp, rescale_pal(),
+      trans = sqrt_trans())))
+    with(mtcars, plot(disp, mpg, cex = cscale(hp, area_pal())))
+    with(mtcars, plot(disp, mpg, pch = 20, cex = 5,
+      col = cscale(hp, seq_gradient_pal("grey80", "black"))))
+```
+
+
+
+Regularly spaced dates.date_breaks(width = "1 month")
+
+Formatted dates.date_format .date_format(format = "%Y-%m-%d", tz = "UTC")
+```{r}
+## by month
+seq(as.Date("2000/1/1"), by = "month", length.out = 12)
+
+date_breaks(width = "1 month")
+```
+
+
+
+```{r}
+years <- seq(as.Date("1910/1/1"), as.Date("1999/1/1"), "years")
+
+seq.Date(as.Date("1910/1/1"), as.Date("1999/1/1"),"month")
+## first days of years
+seq(as.Date("1910/1/1"), as.Date("1999/1/1"), "years")
+## by month
+seq(as.Date("2000/1/1"), by = "month", length.out = 12)
+## quarters
+seq(as.Date("2000/1/1"), as.Date("2003/1/1"), by = "quarter")
+
+
+```
+
+
+
+
+```{r}
+years <- seq(as.Date("1910/1/1"), as.Date("1999/1/1"), "years")
+    t <- date_trans()
+    t$transform(years)
+    t$inverse(t$transform(years))
+    t$format(t$breaks(range(years)))
+```
+
+Dichromat (colour-blind) palette (discrete).
+dichromat_pal(name)
+```{r}
+show_col(dichromat_pal("BluetoOrange.10")(10))
+    show_col(dichromat_pal("BluetoOrange.10")(5))
+    # Can use with gradient_n to create a continous gradient
+    cols <- dichromat_pal("DarkRedtoBlue.12")(12)
+    show_col(gradient_n_pal(cols)(seq(0, 1, length.out = 30)))
+```
+
+
+
+Discard any values outside of range.
+
+ discard(x, range = c(0, 1))
+ 
+ 
+ 
+```{r}
+#discard(c(-1, 0.5, 1, 2, NA))
+```
+
+
+
+Diverging colour gradient (continous).
+
+Description
+Diverging colour gradient (continous).
+Usage
+    div_gradient_pal(low = mnsl("10B 4/6"), mid = mnsl("N 8/0"),
+      high = mnsl("10R 4/6"), space = "Lab")
+Arguments
+low colour for low end of gradient.
+mid colour for mid point
+high colour for high end of gradient.
+space colour space in which to calculate gradient. Must be "Lab" - other values are deprecated.
+
+```{r}
+x <- seq(-1, 1, length.out = 100)
+    r <- sqrt(outer(x^2, x^2, "+"))
+    image(r, col = div_gradient_pal()(seq(0, 1, length.out = 12)))
+    image(r, col = div_gradient_pal()(seq(0, 1, length.out = 30)))
+    image(r, col = div_gradient_pal()(seq(0, 1, length.out = 100)))
+    library(munsell)
+    image(r, col = div_gradient_pal(low =
+       mnsl(complement("10R 4/6", fix = TRUE)))(seq(0, 1, length = 100)))
+
+```
+
+
+dollar_format Currency formatter: round to nearest cent and display dollar sign. Description
+The returned function will format a vector of values as currency. Values are rounded to the nearest cent, and cents are displayed if any of the values has a non-zero cents and the largest value is less than largest_with_cents which by default is 100000.
+
+
+Usage
+    dollar_format(prefix = "$", suffix = "", largest_with_cents = 1e+05, ...,
+      big.mark = ",", negative_parens = FALSE)
+dollar(x)
+
+```{r}
+dollar_format()(c(-100, 0.23, 1.456565, 2e3))
+    dollar_format()(c(1:10 * 10))
+    dollar(c(100, 0.23, 1.456565, 2e3))
+    dollar(c(1:10 * 10))
+    dollar(10^(1:8))
+    usd <- dollar_format(prefix = "USD ")
+    usd(c(100, -100))
+    euro <- dollar_format(prefix = "", suffix = "\u20ac")
+    euro(100)
+```
+
+
+```{r}
+
+finance <- dollar_format(negative_parens = TRUE)
+    
+finance(c(-100, 100))
+
+euro <- dollar_format(prefix = "", suffix = "€")
+euro(1:10)
+```
+
+
+
+
+dscale Discrete scale. Description
+Discrete scale.
+Usage
+    dscale(x, palette, na.value = NA)
+  Arguments
+    x
+    palette
+    na.value
+vector of discrete values to scale aesthetic palette to use
+aesthetic to use for missing values
+
+
+```{r}
+with(mtcars, plot(disp, mpg, pch = 20, cex = 3,
+      col = dscale(factor(cyl), brewer_pal())))
+```
+
+
+expand_range Expand a range with a multiplicative or additive constant.
+Description
+Expand a range with a multiplicative or additive constant.
+Usage
+    expand_range(range, mul = 0, add = 0, zero_width = 1)
+  Arguments
+    range
+    mul
+    add
+    zero_width
+exp_trans
+Description
+range of data, numeric vector of length 2 multiplicative constract
+additive constant
+distance to use if range has zero width
+
+```{r}
+
+expand_range(range=c(1,5), mul = 0.0, add = 1, zero_width = 1)
+expand_range(range=c(1,5), mul = 0.0, add = 2, zero_width = 1)
+expand_range(range=c(1,5), mul = 1, add = 1, zero_width = 1)
+
+```
+
+
+exp_trans
+Description
+range of data, numeric vector of length 2 multiplicative constract
+additive constant
+distance to use if range has zero width
+Exponential transformation (inverse of log transformation).
+  Exponential transformation (inverse of log transformation).
+Usage
+    exp_trans(base = exp(1))
+    
+    
+    
+    ```{r}
+exp_trans(base = exp(1))
+    
+exp_trans(base = exp(100))  
+
+exp(1)
+```
+
+
+extended_breaks Extended breaks. Uses Wilkinson’s extended breaks algorithm as im- plemented in the labeling package.
+Description
+Extended breaks. Uses Wilkinson’s extended breaks algorithm as implemented in the labeling
+package.
+Usage
+    extended_breaks(n = 5, ...)
+Arguments
+n desired number of breaks
+... other arguments passed on to extended
+
+```{r}
+extended_breaks(n=20)(1:10)
+
+```
+
+```{r}
+extended_breaks(n=200)(1:100)%>%head(10)
+```
+
+format_format Format with using any arguments to format.
+Description
+If the breaks have names, they will be used in preference to formatting the breaks.
+Usage
+    format_format(...)
+    
+    
+```{r}
+format.Date("2017-07-28 ")
+```
+
+
+
+gradient_n_pal Arbitrary colour gradient palette (continous).
+Description
+Arbitrary colour gradient palette (continous).
+Usage
+    gradient_n_pal(colours, values = NULL, space = "Lab")
+  Arguments
+    colours
+    values
+space
+grey_pal
+Description
+vector of colours
+if colours should not be evenly positioned along the gradient this vector gives the position (between 0 and 1) for each colour in the colours vector. See rescale for a convience function to map an arbitrary range to between 0 and 1.
+colour space in which to calculate gradient. Must be "Lab" - other values are deprecated.
+
+```{r}
+
+    #gradient_n_pal(colours(), values = NULL, space = "Lab")
+```
+
+grey_pal
+Grey scale palette (discrete).
+Description
+  Grey scale palette (discrete).
+Usage
+    grey_pal(start = 0.2, end = 0.8)
+Arguments
+start gray value at low end of palette end gray value at high end of palette
+
+```{r}
+grey_pal(start = 0.2, end = 0.8)
+    show_col(grey_pal()(25))
+    show_col(grey_pal(0, 1)(25))
+```
+
+hms_trans Transformation for times (class hms).
+Description
+Transformation for times (class hms).
+Usage
+hms_trans()
+
+```{r,warning=FALSE,message=FALSE}
+#Examples
+    if (require("hms")) {
+    hms <- round(runif(10) * 86400)
+    t <- hms_trans()
+    t$transform(hms)
+    t$inverse(t$transform(hms))
+    t$breaks(hms)
+    }
+```
+
+```{r}
+ hms <- round(runif(10) * 86400)
+    t <- hms_trans()
+   
+    hms
+```
+
+```{r}
+ t$transform(hms)
+   
+```
+
+```{r}
+ t$inverse(t$transform(hms))
+     
+```
+
+```{r}
+t$breaks(hms)
+```
+
+hue_pal
+Description
+Hue palette (discrete).
+Usage
+Hue palette (discrete).
+     hue_pal(h = c(0, 360) + 15, c = 100, l = 65, h.start = 0,
+      direction = 1)
+      
+      
+      
+      
+```{r}
+
+    show_col(hue_pal()(4))
+    show_col(hue_pal()(9))
+    show_col(hue_pal(l = 90)(9))
+    show_col(hue_pal(l = 30)(9))
+    show_col(hue_pal()(9))
+    show_col(hue_pal(direction = -1)(9))
+    show_col(hue_pal()(9))
+    show_col(hue_pal(h = c(0, 90))(9))
+    show_col(hue_pal(h = c(90, 180))(9))
+    show_col(hue_pal(h = c(180, 270))(9))
+    show_col(hue_pal(h = c(270, 360))(9))
+```
+
+
+
+```{r}
+  show_col(hue_pal()(100)[4])
+```
+
+
+identity_pal Identity palette. Description
+Leaves values unchanged - useful when the data is already scaled.
+Usage
+identity_pal()
+identity_trans Identity transformation (do nothing).
+Description
+Identity transformation (do nothing).
+Usage
+identity_trans()
+
+```{r}
+#identity_trans()
+```
+
+
+linetype_pal Line type palette (discrete).
+Description
+Based on a set supplied by Richard Pearson, University of Manchester
+Usage
+    linetype_pal()
+    
+    
+    
+    ```{r}
+#linetype_pal()
+    
+```
+
+log1p_trans Log plus one transformation.
+Description
+Log plus one transformation.
+Usage
+    log1p_trans()
+
+```{r}
+
+    trans_range(log_trans(), 1:10)
+    trans_range(log1p_trans(), 0:9)
+```
+
+log_breaks Log breaks (integer breaks on log-transformed scales).
+Description
+Log breaks (integer breaks on log-transformed scales).
+Usage
+    log_breaks(n = 5, base = 10)
+Arguments
+n desired number of breaks base base of logarithm to use
+
+```{r}
+log_breaks()(c(1, 1e6))
+log_breaks()(c(1, 1e5))
+```
+
+
+
+log_trans Log transformation.
+Description
+Log transformation.
+Usage
+    log_trans(base = exp(1))
+Arguments
+base base of logarithm
+
+```{r}
+
+    log_trans(base = exp(1))
+```
+
+manual_pal
+Description
+Manual palette (manual).
+Usage
+    manual_pal(values)
+Arguments
+Manual palette (manual).
+ values vector of values to be used as a palette.
+ 
+ 
+ 
+```{r}
+#show_col(manual_pal())
+```
+math_format Add arbitrary expression to a label. The symbol that will be replace by the label value is .x.
+Description
+Add arbitrary expression to a label. The symbol that will be replace by the label value is .x.
+Usage
+    math_format(expr = 10^.x, format = force)
+    
+    
+    
+    
+    ```{r}
+math_format()(1:10)
+    
+```
+```{r}
+math_format(alpha + frac(1, .x))(1:10)
+    
+```
+```{r}
+math_format()(runif(10))
+    
+```
+```{r}
+math_format(format = percent)(runif(10))
+```
+
+muted Mute standard colour.
+Description
+Mute standard colour.
+Usage
+    muted(colour, l = 30, c = 70)
+Arguments
+colour character vector of colours to modify l new luminance
+c new chroma
+
+```{r}
+
+    muted("red")
+    muted("blue")
+    show_col(c("red", "blue", muted("red"), muted("blue")))
+```
+
+
+
+
+ordinal_format Ordinal formatter: add ordinal suffixes (-st, -nd, -rd, -th) to numbers.
+Description
+Ordinal formatter: add ordinal suffixes (-st, -nd, -rd, -th) to numbers.
+Usage
+    ordinal_format(x)
+    ordinal(x)
+Arguments
+x a numeric vector to format Value
+a function with single paramater x, a numeric vector, that returns a character vector
+```{r}
+  ordinal_format()(1:10)
+    ordinal(1:10)
+```
+
+package-scales Generic plot scaling methods
+Description
+Generic plot scaling methods
+
+
+parse_format Parse a text label to produce expressions for plotmath. Description
+Parse a text label to produce expressions for plotmath.
+Usage
+    parse_format()
+Value
+a function with single parameter x, a character vector, that returns a list of expressions
+
+
+```{r}
+parse_format()(c("alpha", "beta", "gamma"))
+```
+
+percent_format Percent formatter: multiply by one hundred and display percent sign.
+Description
+Percent formatter: multiply by one hundred and display percent sign.
+Usage
+    percent_format()
+percent(x)
+Arguments
+x a numeric vector to format Value
+a function with single parameter x, a numeric vector, that returns a character vector
+
+
+```{r}
+percent_format()(runif(10))
+    percent(runif(10))
+    percent(runif(10, 1, 10))
+```
+
+
+pretty_breaks Pretty breaks. Uses default R break algorithm as implemented in pretty.
+Description
+Pretty breaks. Uses default R break algorithm as implemented in pretty. Usage
+    pretty_breaks(n = 5, ...)
+Arguments
+n desired number of breaks
+... other arguments passed on to pretty
+
+```{r}
+pretty_breaks()(1:10)
+pretty_breaks(n=10)(1:100)
+    
+
+```
+
+```{r}
+pretty_breaks(n=4)(as.Date(c("2008-01-01", "2009-01-01")))
+```
+```{r}
+pretty_breaks()(as.Date(c("2008-01-01", "2090-01-01")))
+```
+
+
+```{r}
+seq.Date(as.Date(c("2008-01-01")),as.Date(c( "2009-01-01")),"1 month")
+seq.Date(as.Date(c("2008-01-01")),as.Date(c( "2009-01-01")),"2 month")
+seq.Date(as.Date(c("2008-01-01")),as.Date(c( "2009-01-01")),"3 month")
+```
+
+
+
+```{r}
+date=seq.Date(as.Date(c("2008-01-01")),as.Date(c( "2016-01-01")),"year")
+date
+
+```
+
+###probability_trans Probability transformation.
+Description
+Probability transformation.
+Usage
+    probability_trans(distribution, ...)
+Arguments
+distribution probability distribution. Should be standard R abbreviation so that "p" + distri- bution is a valid probability density function, and "q" + distribution is a valid quantile function.
+... other arguments passed on to distribution and quantile functions
+
+###Range-class Mutable ranges.
+Description
+Mutable ranges have a two methods (train and reset), and make it possible to build up complete ranges with multiple passes.
+reciprocal_trans Reciprocal transformation.
+Description
+Reciprocal transformation.
+Usage
+    reciprocal_trans()
+###rescale Rescale numeric vector to have specified minimum and maximum.
+Description
+Rescale numeric vector to have specified minimum and maximum.
+Usage
+    rescale(x, to = c(0, 1), from = range(x, na.rm = TRUE, finite = TRUE))
+Arguments
+x numeric vector of values to manipulate.
+to output range (numeric vector of length two)
+from input range (numeric vector of length two). If not given, is calculated from the range of x
+
+```{r}
+rescale(1:100)%>%head()
+
+```
+
+```{r}
+rescale(runif(50))%>%head()
+
+```
+```{r}
+rescale(1)
+```
+
+
+```{r}
+rescale(x=1:10, to = c(0, 5), from = range(x, na.rm = TRUE, finite = TRUE))
+```
+```{r}
+seq(5,27.5,2.5)
+```
+
+
+rescale_max Rescale numeric vector to have specified maximum.
+Description
+Rescale numeric vector to have specified maximum.
+Usage
+    rescale_max(x, to = c(0, 1), from = range(x, na.rm = TRUE))
+Arguments
+x numeric vector of values to manipulate.
+to output range (numeric vector of length two)
+from input range (numeric vector of length two). If not given, is calculated from the range of x
+
+
+```{r}
+rescale_max(1:10)
+    rescale_max(runif(10))
+    rescale_max(1)
+    rescale_max(x=10:20, to = c(1, 10), from = range(x, na.rm = TRUE))
+```
+
+rescale_mid
+Description
+Rescale numeric vector to have specified minimum, midpoint, and maximum.
+  Rescale numeric vector to have specified minimum, midpoint, and maximum.
+Usage
+    rescale_mid(x, to = c(0, 1), from = range(x, na.rm = TRUE), mid = 0)
+Arguments
+x numeric vector of values to manipulate.
+to output range (numeric vector of length two)
+from input range (numeric vector of length two). If not given, is calculated from the range of x
+mid mid-point of input range
+
+
+```{r}
+rescale_mid(x=20:30, to = c(0, 1), from = range(x, na.rm = TRUE), mid = 25.5)
+rescale_mid(1:10, mid = 5.5)
+    rescale_mid(runif(5), mid = 0.5)
+    rescale_mid(1)
+```
+
+rescale_none
+Description
+Don’t peform rescaling
+Usage
+    rescale_none(x, ...)
+Arguments
+Don’t peform rescaling
+ x numeric vector of values to manipulate. ... all other arguments ignored
+ 
+ 
+
+```{r}
+rescale_none(1:10)
+```
+
+rescale_pal Rescale palette (continuous).
+Description
+Just rescales the input to the specific output range. Useful for alpha, size, and continuous position.
+Usage
+    rescale_pal(range = c(0.1, 1))
+Arguments
+range Numeric vector of length two, giving range of possible values. Should be be- tween 0 and 1.
+```{r}
+#runif(5)%>%rescale_pal(range = c(0.1, 1))
+```
+reverse_trans
+Description
+Reverse transformation.
+Usage
+    reverse_trans()
+  scientific_format
+Description
+Scientific formatter.
+Usage
+31
+ Reverse transformation.
+ ### Scientific formatter.
+     scientific_format(digits = 3, ...)
+    scientific(x, digits = 3, ...)
+Arguments
+digits number of significant digits to show ... other arguments passed on to format x a numeric vector to format
+Value
+a function with single parameter x, a numeric vector, that returns a character vector
+
+```{r}
+scientific_format()(1:10)
+    scientific_format()(runif(10))
+    scientific_format(digits = 2)(runif(10))
+    scientific(1:10)
+    scientific(runif(10))
+    scientific(runif(10), digits = 2)
+```
+
+
+### seq_gradient_pal Sequential colour gradient palette (continous).
+Description
+Sequential colour gradient palette (continous).
+Usage
+    seq_gradient_pal(low = mnsl("10B 4/6"), high = mnsl("10R 4/6"),
+      space = "Lab")
+Arguments
+low colour for low end of gradient.
+high colour for high end of gradient.
+space colour space in which to calculate gradient. Must be "Lab" - other values are deprecated.
+
+```{r}
+x <- seq(0, 1, length.out = 25)
+    show_col(seq_gradient_pal()(x))
+    show_col(seq_gradient_pal("white", "black")(x))
+    library(munsell)
+    show_col(seq_gradient_pal("white", mnsl("10R 4/6"))(x))
+```
+
+
+
+###shape_pal Shape palette (discrete).
+Description
+Shape palette (discrete).
+Usage
+    shape_pal(solid = TRUE)
+Arguments
+solid should shapes be solid or not?
+
+###show_col Show colours.
+Description
+A quick and dirty way to show colours in a plot.
+Usage
+    show_col(colours, labels = TRUE, borders = NULL)
+  Arguments
+    colours
+    labels
+borders
+###sqrt_trans
+Description
+a character vector of colours
+boolean, whether to show the hexadecimal representation of the colours in each tile
+colour of the borders of the tiles; matches the border argument of rect. The default means par("fg"). Use border = NA to omit borders.
+Square-root transformation.
+  Square-root transformation.
+Usage
+    sqrt_trans()
+squish
+Description
+Squish values into range.
+Usage
+Squish values into range.
+  squish(x, range = c(0, 1), only.finite = TRUE)
+  
+  
+###  squish
+Description
+Squish values into range.
+Usage
+Squish values into range.
+squish(x, range = c(0, 1), only.finite = TRUE)
+ x
+    range
+    only.finite
+Author(s)
+squish_infinite
+numeric vector of values to manipulate.
+numeric vector of length two giving desired output range. if TRUE (the default), will only modify finite values.
+```{r}
+
+    squish(c(-1, 0.5, 1, 2, NA))
+    squish(c(-1, 0, 0.5, 1, 2))
+    squish(x=c(-1, 0, 0.5, 1, 2,-16,6), range = c(-5, 10), only.finite = TRUE)
+```
+
+ squish_infinite Squish infinite values to range.
+Description
+Squish infinite values to range.
+Usage
+    squish_infinite(x, range = c(0, 1))
+Arguments
+x numeric vector of values to manipulate.
+range numeric vector of length two giving desired output range.
+Examples
+
+```{r}
+squish_infinite(c(-Inf, -1, 0, 1, 2, Inf))
+squish_infinite(x=c(-Inf, -1, 0, 1, 2, Inf), range = c(0, 1))
+```
+
+  
+###  time_trans Transformation for date-times (class POSIXt).
+Description
+Transformation for date-times (class POSIXt).
+Usage
+    time_trans(tz = NULL)
+Arguments
+tz Optionally supply the time zone. If NULL, the default, the time zone will be extracted from first input with a non-null tz.
+
+```{r}
+hours <- seq(ISOdate(2000,3,20, tz = ""), by = "hour", length.out = 10)
+   hours
+   
+```
+
+```{r}
+
+    t <- time_trans()
+    t$transform(hours)
+    
+```
+
+
+```{r}
+t$inverse(t$transform(hours))
+    
+```
+```{r}
+t$format(t$breaks(range(hours)))
+```
+####train_continuous Train (update) a continuous scale
+Description
+Train (update) a continuous scale
+Usage
+    train_continuous(new, existing = NULL)
+Arguments
+new New data to add to scale existing Optional existing scale to update
+
+
+
+
+
+###train_discrete Train (update) a discrete scale
+Description
+Train (update) a discrete scale
+Usage
+    train_discrete(new, existing = NULL, drop = FALSE, na.rm = FALSE)
+  Arguments
+    new
+    existing
+    drop
+    na.rm
+####trans_breaks
+Description
+These often do not
+Usage
+New data to add to scale
+Optional existing scale to update
+TRUE, will drop factor levels not associated with data If TRUE, will remove missing values
+Pretty breaks on transformed scale.
+produce very attractive breaks.
+      trans_breaks(trans, inv, n = 5, ...)
+Arguments
+trans function of single variable, x, that given a numeric vector returns the transformed values
+inv inverse of the transformation function n desired number of ticks
+... other arguments passed on to pretty
+
+```{r}
+trans_breaks("log10", function(x) 10 ^ x)(c(1, 1e6))
+    trans_breaks("sqrt", function(x) x ^ 2)(c(1, 100))
+    trans_breaks(function(x) 1 / x, function(x) 1 / x)(c(1, 100))
+    trans_breaks(function(x) -x, function(x) -x)(c(1, 100))
+```
+
+####trans_format Format labels after transformation.
+Description
+Format labels after transformation.
+Usage
+    trans_format(trans, format = scientific_format())
+Arguments
+trans transformation to apply
+format additional formatter to apply after transformation
+Value
+a function with single parameter x, a numeric vector, that returns a character vector of list of ex- pressions
+
+```{r}
+tf <- trans_format("log10", scientific_format())
+    tf(10 ^ 1:6)
+```
+
+
+
+trans_new Create a new transformation object.
+Description
+A transformation encapsulates a transformation and its inverse, as well as the information needed to create pleasing breaks and labels. The breaks function is applied on the transformed range of the range, and it’s expected that the labels function will perform some kind of inverse tranformation on these breaks to give them labels that are meaningful on the original scale.
+Usage
+    trans_new(name, transform, inverse, breaks = extended_breaks(),
+      format = format_format(), domain = c(-Inf, Inf))
+      
+      
+      
+ 
+ 
+```{r}
+trans_breaks("log10", function(x) 10 ^ x)(c(3))
+log(1000)
+logb(1000)
+```
+
+####trans_range Compute range of transformed values.
+Description
+Silently drops any ranges outside of the domain of trans. Usage
+    trans_range(trans, x)
+  Arguments
+trans x
+unit_format
+Description
+Add units to the labels
+Usage
+a transformation object, or the name of a transformation object given as a string. a numeric vector to compute the rande of
+Add units to the labels
+  unit_format(unit = "m", scale = 1, sep = " ", ...)
+  
+  
+  
+```{r}
+ # labels in kilometer when the raw data are in meter
+    km <- unit_format(unit = "km", scale = 1e-3, digits = 2)
+    km(runif(10) * 1e3)
+    # labels in hectares, raw data in square meters
+    ha <- unit_format(unit = "ha", scale = 1e-4)
+    km(runif(10) * 1e5)
+
+```
+
+
+wrap_format Wrap text to a specified width, adding newlines for spaces if text ex- ceeds the width
+Description
+Wrap text to a specified width, adding newlines for spaces if text exceeds the width
+Usage
+    wrap_format(width)
+Arguments
+width value above which to wrap Value
+Function with single parameter x, a character vector, that returns a wrapped character vector
+Examples
+    wrap_10 <- wrap_format(10)
+    wrap_10('A long line that needs to be wrapped')
+```{r}
+ wrap_10 <- wrap_format(10)
+    wrap_10('A long line that needs to be wrapped')
+```
+
+###zero_range Determine if range of vector is close to zero, with a specified tolerance
+Description
+The machine epsilon is the difference between 1.0 and the next number that can be represented by the machine. By default, this function uses epsilon * 1000 as the tolerance. First it scales the values so that they have a mean of 1, and then it checks if the difference between them is larger than the tolerance.
+Usage
+    zero_range(x, tol = 1000 * .Machine$double.eps)
+Arguments
+x numeric range: vector of length 2 tol A value specifying the tolerance.
+Value
+logical TRUE if the relative difference of the endpoints of the range are not distinguishable from 0.
+
+```{r}
+eps <- .Machine$double.eps
+    zero_range(c(1, 1 + eps))       # TRUE
+    zero_range(c(1, 1 + 99 * eps))  # TRUE
+    zero_range(c(1, 1 + 1001 * eps)) # FALSE - Crossed the tol threshold
+    zero_range(c(1, 1 + 2 * eps), tol = eps) # FALSE - Changed tol
+    # Scaling up or down all the values has no effect since the values
+    # are rescaled to 1 before checking against tol
+    zero_range(100000 * c(1, 1 + eps))        # TRUE
+    zero_range(100000 * c(1, 1 + 1001 * eps))  # FALSE
+    zero_range(.00001 * c(1, 1 + eps))        # TRUE
+    zero_range(.00001 * c(1, 1 + 1001 * eps))  # FALSE
+    # NA values
+    zero_range(c(1, NA))   # NA
+    zero_range(c(1, NaN))  # NA
+    # Infinite values
+    zero_range(c(1, Inf))     # FALSE
+    zero_range(c(-Inf, Inf))  # FALSE
+    zero_range(c(Inf, Inf))   # TRUE
+```
+

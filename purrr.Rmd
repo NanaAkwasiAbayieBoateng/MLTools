@@ -1,0 +1,625 @@
+---
+title: "Purrr and furrr Tutorial"
+output: html_notebook
+author: Nana Boateng
+df_print: paged
+Time: '`r Sys.time()`'
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+---
+
+```{r setup,include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = FALSE,
+                      out.width ="100%",
+                      message = FALSE)
+
+```
+
+
+
+```{r}
+#install.packages(c('officer',"rvg"))
+
+
+#install.packages(c("ggridges"))
+```
+
+
+
+
+```{r}
+library(rvg)
+library(ggplot2)
+library(officer)
+library(data.table)
+library(ggridges)
+library(tidyverse)
+library(tidyquant)
+library(officer)
+library(rvg)
+library(viridis)
+library(purrr)
+library(furrr)
+library(scales)
+# NOT RUN {
+# Convert factors to characters
+iris %>%
+  map_if(is.factor, as.character) %>%
+  str()
+
+```
+
+
+```{r}
+# Specify which columns to map with a numeric vector of positions:
+mtcars %>% map_at(c(1, 4, 5), as.character) %>% str()
+
+# Or with a vector of names:
+mtcars %>% map_at(c("cyl", "am"), as.character) %>% str()
+
+
+```
+
+
+```{r}
+# Specify which columns to map with a numeric vector of positions:
+mtcars %>% furrr::future_map_at(c(1, 4, 5), as.character) %>% str()
+
+# Or with a vector of names:
+mtcars %>% furrr::future_map_at(c("cyl", "am"), as.character) %>% str()
+
+```
+
+
+
+
+list_modify(.x, ...)/update_list(x, z1 = ~z[[1]])  modify a list like add new members.
+```{r}
+list(x = rbernoulli(100), y = 1:100) %>%
+  transpose() %>%
+  map_if("x", ~ update_list(., y = ~ y * 100)) %>%
+  transpose() %>%
+  simplify_all()
+```
+
+
+```{r}
+list(x = rbernoulli(100), y = 1:100) %>%
+  transpose() %>%
+  furrr::future_map_if("x", ~ update_list(., y = ~ y * 100)) %>%
+  transpose() %>%
+  simplify_all()
+
+```
+
+
+
+```{r}
+library(purrr)
+# A more realistic example: split a data frame into pieces, fit a
+# model to each piece, summarise and extract R^2
+mtcars %>%
+  split(.$cyl) %>%
+  map(~ lm(mpg ~ wt,.)) 
+
+```
+
+
+```{r}
+# A more realistic example: split a data frame into pieces, fit a
+# model to each piece, summarise and extract R^2
+mtcars %>%
+  split(.$cyl) %>%
+  furrr::future_map(~ lm(mpg ~ wt,.))
+```
+
+
+
+
+```{r}
+models <- mtcars %>%
+split(.$cyl) %>%
+map(function(df) lm(mpg ~ wt, data = df))
+models
+```
+
+```{r}
+models <- mtcars %>%
+split(.$cyl)
+
+models %>%
+map(~lm(mpg ~ wt, data = .))
+
+```
+
+
+```{r}
+x=list(a=c(2,4,5),b=c(5,6,8,9))
+
+sapply(x,mean)
+
+
+x%>%
+map_df(.,mean)%>%
+  simplify_all()
+
+```
+
+```{r}
+library(purrr)
+
+mtcars %>%
+  split(.$cyl) %>% # from base R
+  map(~ lm(mpg ~ wt, data = .)) %>%
+  map(summary) %>%
+  map_dbl("r.squared")
+```
+
+```{r}
+mtcars %>%
+  split(.$cyl) %>% # from base R
+  furrr::future_map(~ lm(mpg ~ wt, data = .)) %>%
+ furrr::future_map(summary) %>%
+  furrr::future_map_dbl("r.squared")
+```
+
+
+
+
+```{r}
+# Split into pieces, fit model to each piece, then predict
+by_cyl <- mtcars %>% split(.$cyl)
+mods <- by_cyl %>% map(~ lm(mpg ~ wt, data = .))
+map2(mods, by_cyl, predict)
+
+```
+
+
+
+
+create 10 list of size 10 each and find the mean of each
+```{r}
+set.seed(1)
+# NOT RUN {
+1:10 %>%
+  map(rnorm, n = 10)%>%
+  map_dbl(mean) 
+
+# Or use an anonymous function
+1:10 %>%
+  map(function(x) rnorm(10, x))%>%
+  map_dbl(mean) 
+
+
+# Or a formula
+1:10 %>%
+  map(~ rnorm(10, .x))%>%
+  map_dbl(mean) 
+
+ 
+# Or a formula
+1:10 %>%
+  map(~ rnorm(10, .x))%>%
+future_imap_dbl(mean) 
+
+```
+
+
+```{r}
+# Vectorizing a function over multiple arguments
+df <- data.frame(
+  x = c("apple", "banana", "cherry"),
+  pattern = c("p", "n", "h"),
+  replacement = c("x", "f", "q"),
+  stringsAsFactors = FALSE
+  )
+pmap(df, gsub)
+pmap_chr(df, gsub)
+
+furrr::future_imap_chr(df, gsub)
+
+furrr::future_imap(df, gsub)
+
+```
+
+
+
+
+```{r}
+m=matrix(0,10,10)
+for (i in 1:10){
+  
+m[i,]=rnorm(10)  
+}
+m
+
+m=list()
+for (i in 1:10){
+  
+m[[i]]=rnorm(10)   
+}
+m
+
+```
+
+
+
+
+```{r}
+# Extract by name or position
+# .default specifies value for elements that are missing or NULL
+l1 <- list(list(a = 1L), list(a = NULL, b = 2L), list(b = 3L))
+l1 %>% map("a", .default = "???")
+l1 %>% map_int("b", .default = NA)
+l1 %>% map_int(2, .default = NA)
+l1
+```
+
+keep elements in second position in each list.
+```{r}
+#
+# Supply multiple values to index deeply into a list
+l2 <- list(
+  list(num = 1:3,     letters[1:3]),
+  list(num = 101:103, letters[4:6]),
+  list()
+)
+l2%>% map(c(2, 2)) 
+
+```
+
+select the third element in each num list
+```{r}
+# Use a list to build an extractor that mixes numeric indices and names,
+# and .default to provide a default value if the element does not exist
+l2
+l2 %>% map(list("num", 3))
+
+```
+
+
+```{r}
+# A more realistic example: split a data frame into pieces, fit a
+# model to each piece, summarise and extract R^2
+mtcars %>%
+  split(.$cyl) %>%
+  map(~ lm(mpg ~ wt, data = .x)) %>%
+  map(summary) %>%
+  map_dbl("r.squared")
+```
+
+
+
+```{r}
+# Use map_lgl(), map_dbl(), etc to reduce to a vector.
+# * list
+# Use map_lgl(), map_dbl(), etc to reduce to a vector.
+# * list
+mtcars %>% map(sum)
+# * vector
+mtcars %>% map_dbl(sum)
+
+apply(mtcars,2,sum)
+
+```
+
+
+```{r}
+# If each element of the output is a data frame, use
+# map_dfr to row-bind them together:
+mtcars %>%
+  split(.$cyl) %>%
+  map(~ lm(mpg ~ wt, data = .x)) %>%
+  map_dfr(~ as.data.frame(t(as.matrix(coef(.)))))
+# (if you also want to preserve the variable names see
+# the broom package)
+# }
+```
+
+```{r}
+# A more realistic example: split a data frame into pieces, fit a
+# model to each piece, summarise and extract R^2
+m=mtcars %>%
+  split(.$cyl) %>%
+  map(~ lm(mpg ~ wt, data = .x))%>%map("coefficients")%>%as.data.frame()%>%t()
+
+rownames(m)<-c()
+m%>%data.frame()
+#m[[1]]$coef
+#library(tibble)
+#remove_rownames(m)
+
+```
+
+keep() and discard() allow you to filter a vector based on a predicate function. compact() is a helpful wrapper that throws away empty elements of a list.
+```{r}
+1:10 %>% keep(~. %% 2 == 0)
+
+1:10 %>% discard(~. %% 3 == 0)
+
+
+list(list(x = TRUE, y = 10), list(x = FALSE, y = 20)) %>%
+  keep("x") %>%
+  str()
+
+rep(10, 10) %>%
+  map(sample, 5) %>%
+  keep(function(x) mean(x) > 6)
+
+```
+
+
+
+```{r}
+list(NULL, 1:3, NULL, 7) %>%
+  compact() %>%
+  str()
+```
+
+
+
+#### sweep
+```{r}
+require(stats) # for median
+attitude%>%head()
+med.att <- apply(attitude, 2, median)
+med.att 
+sweep(data.matrix(attitude), 2, med.att)  # subtract the column medians
+
+```
+
+
+```{r}
+## More sweeping:
+A <- array(1:24, dim = 4:2)
+
+## no warnings in normal use
+
+# subtract 5 from every element
+sweep(A, 1, 5)
+
+A
+
+
+A.min<-apply(A,1,min)
+A.min
+sweep(A,1,1:3)
+#subtract colmeans from each column of array
+# first element of column subracts all first columns of array
+#second element of column means subtract from second columns of array
+B=matrix(1:12,nrow = 4)
+M=colMeans(B)
+M
+
+A
+sweep(A,2,M,FUN="-")
+
+A-M
+```
+
+
+
+#### combine
+Take a sequence of vector, matrix or data frames and combine into rows of a common data frame with an additional column source indicating the source object
+```{r}
+a  <-  matrix(rnorm(12),ncol=4,nrow=3)
+b  <-  1:4
+combine(a,b)
+
+
+combine(x=a,b)
+combine(x=a,y=b)
+#combine(a,b,names=c("one","two")
+c <- 1:6
+combine(b,c)
+
+
+rbind(a,b)
+
+
+rbind.data.frame(a,b)
+
+
+```
+
+```{r}
+#data.table::rbindlist(a,b,use.names=FALSE,fill=T)
+
+## ---------------------------------------------------------------------
+## COMBINING TWO MATRICES
+## ---------------------------------------------------------------------
+m <- matrix(1:20, nrow=5, dimnames=list(LETTERS[1:5], letters[1:4]))
+combine(m[1:3,], m[4:5,])
+combine(m[1:3, 1:3], m[3:5, 3:4]) # overlap
+
+m
+as.vector(m)
+```
+
+setNames
+
+```{r}
+## ---------------------------------------------------------------------
+## setNames
+## ---------------------------------------------------------------------
+setNames( 1:3, c("foo", "bar", "baz") )
+
+# this is just a short form of
+tmp <- 1:3
+names(tmp) <-  c("foo", "bar", "baz")
+tmp
+```
+
+#### Plotting a list of ggplots and saving them all at the same time.
+
+
+```{r}
+library(ggplot2)
+p<-mtcars%>%
+  split(.$cyl)%>%
+  map(~ggplot(.,aes(mpg,wt))+geom_point())
+
+paths<-stringr::str_c(names(p),".pdf")
+
+#paste(names(p),".pdf")
+
+#pwalk(list(paths,p),ggsave,path="/Users/nanaakwasiabayieboateng/Documents/memphisclassesbooks/ggplot2")
+
+pmap(list(paths,p),ggsave,path="/Users/nanaakwasiabayieboateng/Documents/memphisclassesbooks/ggplot2")
+
+```
+
+
+
+```{r}
+# find the first element where predicate is true
+ind=round(rnorm(20))
+diff(ind)%>%detect(~.==1)
+
+
+diff(ind)%>%detect_index(~.==1)
+```
+
+
+#### Aggregate
+
+
+## S3 method for class 'formula'
+aggregate(formula, data, FUN, ...,
+          subset, na.action = na.omit)
+
+## S3 method for class 'ts'
+aggregate(x, nfrequency = 1, FUN = sum, ndeltat = 1,
+          ts.eps = getOption("ts.eps"), ...)
+
+```{r}
+## Dot notation:
+
+iris%>%head()
+aggregate(. ~ Species, data = iris, mean)
+
+
+## Formulas, one ~ one, one ~ many, many ~ one, and many ~ many:
+
+chickwts%>%head
+aggregate(weight ~ feed, data = chickwts, mean)
+#alternatively
+aggregate(. ~ feed, data = chickwts, mean)
+
+```
+
+#### Imputing missing values in parallel using {furrr}
+
+```{r}
+library(mice)
+
+data(boys)
+
+brotools::describe(boys) %>%
+  select(variable, type, n_missing, everything())
+```
+
+```{r}
+start <- Sys.time()
+imp_boys <- mice(boys, m = 10, maxit = 100, printFlag = FALSE)
+end <- Sys.time() - start
+
+
+imp_boys <- mice::complete(imp_boys, "long")
+
+print(end)
+
+
+
+```
+
+
+
+
+```{r}
+library(mice)
+start <- Sys.time()
+imp_boys_purrr <- map(rep(1, 10), ~mice(data = boys, m = ., maxit = 100, printFlag = FALSE))
+end <- Sys.time() - start
+
+print(end)
+
+imp_boys_purrr_complete <- map(imp_boys_purrr, mice::complete)
+
+```
+
+
+
+
+```{r}
+imp_boys_purrr <- map2(.x = seq(1,10), .y = imp_boys_purrr_complete, ~mutate(.y, imp_id = as.character(.x)))
+```
+
+
+
+
+```{r}
+imp_boys_purrr <- bind_rows(imp_boys_purrr)
+
+rbindlist(imp_boys_purrr)
+```
+
+
+
+```{r}
+#devtools::install_github("DavisVaughan/furrr")
+library(furrr)
+plan(multiprocess)
+
+start <- Sys.time()
+imp_boys_future <-future_map(rep(1, 10), ~mice(data = boys, m = ., maxit = 100, printFlag = FALSE))
+end <- Sys.time() - start
+
+print(end)
+```
+
+
+
+```{r}
+imp_boys_future_complete <- map(imp_boys_future, mice::complete)
+
+imp_boys_future <- map2(.x = seq(1,10), .y = imp_boys_future_complete, ~mutate(.y, imp_id = as.character(.x)))
+
+imp_boys_future <- bind_rows(imp_boys_future)
+
+imp_boys_future %>%
+  brotools::describe() %>%
+  select(variable, type, n_missing, everything())
+```
+
+
+```{r}
+
+start <- Sys.time()
+library(parallelMap)
+parallelStartSocket(2) 
+parallelStartMulticore(cpus=6)# start in socket mode and create 2 processes on localhost
+f = function(i){
+  #map(i, mice(data = boys, m = ., maxit = 100, printFlag = FALSE))
+  mice(boys, m = i, maxit = 100, printFlag = FALSE)
+} 
+
+# define our job
+y = parallelMap(f, rep(1,10)) # like R's Map but in parallel
+
+parallelStop()
+end <- Sys.time() - start
+
+print(end)
+
+```
+
+
+
+
+
+```{r}
+#devtools::install_github("b-rodrigues/parlMICE")
+```
+

@@ -1,0 +1,99 @@
+---
+title: "List all files in a Directory"
+output: html_notebook
+author: Nana Boateng
+df_print: paged
+Time: '`r Sys.time()`'
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+---
+
+ 
+```{r}
+#setwd("/Users/nanaakwasiabayieboateng/Documents/memphisclassesbooks/Time series/Manpower")
+
+knitr::opts_knit$set(root.dir = "/Users/nanaakwasiabayieboateng/Documents/memphisclassesbooks/Time series/Manpower")
+
+```
+ 
+ 
+ 
+ 
+List sheet names
+
+```{r}
+library(readxl)
+library(rio)
+library(tidyverse)
+library(readr)
+
+
+
+
+path<-"/Users/nanaakwasiabayieboateng/Documents/memphisclassesbooks/Time series/Manpower/actvsfcdatajuly311.xlsx"
+
+path2<-"/Users/nanaakwasiabayieboateng/Documents/memphisclassesbooks/Time series/Manpower"
+
+excel_sheets(path = path)
+
+import(path)%>%head(5)
+```
+
+
+
+
+```{r}
+
+allfiles<-list.files(path = path2)
+
+csvfiles<-list.files(path = path2,pattern = "*.csv")
+
+sapply(csvfiles,read_csv)
+
+
+
+read_csv(paste(path2,"pred.csv",sep = "/"))
+
+
+
+```
+
+
+Both works the same
+```{r}
+#list.files(path = path2,pattern ="*.xlsx" )
+
+filelist<-list.files(path = path2,pattern ="*.xlsx" )
+
+#`~$actvsfcdatajuly311.xlsx` %in% filelist
+
+
+filelist[-c(1,2,3,4)]
+
+namelist<-c("actfcdatajuly31.xlsx","~$actvsfcdatajuly311.xlsx")
+
+df.list<-sapply(filelist, read_excel)
+
+df.list
+
+
+```
+
+
+```{r}
+library(purrr)
+
+filelist<-list.files(path = path2,pattern ="*.xlsx" )
+
+filelist<-filelist[c(12,13)]
+
+filelist<-set_names(filelist,filelist)
+filelist
+
+df<-map_df(filelist,read_excel,.id = "id")
+
+
+
+
+
+```
+
