@@ -1,6 +1,8 @@
-#truth: integer vector with truth labels, values range from 0 to n - 1 classes
-# prob_matrix: predicted probs: column 1 => label 0, column 2 => label 1 and so on
+
 Multiclasslogloss = function(truth, pred_prob_matrix, eps = 1e-15){
+  
+  #truth: integer vector with truth labels, values range from 0 to n - 1 classes
+# prob_matrix: predicted probs: column 1 => label 0, column 2 => label 1 and so on
   
   if(is.double(truth)=="FALSE"){
     
