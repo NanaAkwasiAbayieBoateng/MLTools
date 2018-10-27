@@ -40,7 +40,7 @@ Varplot<-function(feature,Importance, colours = NA,no_features=15){
     labs(title = paste0("Variables Importance. (", no_features, " / ", length(feature), " plotted)"))+
     
     
-    geom_label(aes(label=round(Importance,0),vjust=0.5))+
+    geom_label(aes(label=round(Importance,2),vjust=0.5))+
     
     #geom_label_repel(aes(label=round(Importance,0),vjust=-0.2,size=4))+
     
