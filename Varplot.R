@@ -50,7 +50,7 @@ Varplot<-function(feature,Importance, colours = NA,no_features=15){
       legend.direction="horizontal",
       #legend.title = element_text("Above or below IQR"), # remove element_blank() x axis ticks and labels
       legend.title = element_blank(),
-      text=element_text(size=12,  family="Comic Sans MS"),
+      text=element_text(size=12,  family="Times"),
       #axis.ticks.x = element_blank(),
       #axis.text.x = element_blank(), #remove x-qxis text
       #axis.title.x = element_blank(),
